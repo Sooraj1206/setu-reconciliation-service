@@ -1,0 +1,28 @@
+version: "3.8"
+
+# Optional: run the service against Postgres locally instead of SQLite.
+# Usage: docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: setu
+      POSTGRES_PASSWORD: setu
+      POSTGRES_DB: reconciliation
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+psycopg2://setu:setu@db:5432/reconciliation
+      PORT: 8000
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "Setu Payment Reconciliation Service",
+    "description": "Ingest payment lifecycle events, track transaction state, and surface reconciliation discrepancies. Set the `base_url` collection variable to your local (http://localhost:8000) or deployed URL before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "sample_transaction_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Ingest payment_initiated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('sample_transaction_id', body.transaction_id);",
+                  "pm.test('202 Accepted', () => pm.response.to.have.status(202));",
+                  "pm.test('status is accepted', () => pm.expect(body.status).to.eql('accepted'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"demo-evt-001\",\n  \"event_type\": \"payment_initiated\",\n  \"transaction_id\": \"demo-txn-001\",\n  \"merchant_id\": \"merchant_1\",\n  \"merchant_name\": \"UrbanCart\",\n  \"amount\": 2499.00,\n  \"currency\": \"INR\",\n  \"timestamp\": \"2026-01-15T10:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Ingest payment_processed (same txn)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"demo-evt-002\",\n  \"event_type\": \"payment_processed\",\n  \"transaction_id\": \"demo-txn-001\",\n  \"merchant_id\": \"merchant_1\",\n  \"merchant_name\": \"UrbanCart\",\n  \"amount\": 2499.00,\n  \"currency\": \"INR\",\n  \"timestamp\": \"2026-01-15T10:00:05Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Ingest settled (same txn)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"demo-evt-003\",\n  \"event_type\": \"settled\",\n  \"transaction_id\": \"demo-txn-001\",\n  \"merchant_id\": \"merchant_1\",\n  \"merchant_name\": \"UrbanCart\",\n  \"amount\": 2499.00,\n  \"currency\": \"INR\",\n  \"timestamp\": \"2026-01-15T18:00:00Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Duplicate resubmission (idempotency demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('status is duplicate_ignored', () => pm.expect(body.status).to.eql('duplicate_ignored'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"demo-evt-001\",\n  \"event_type\": \"payment_initiated\",\n  \"transaction_id\": \"demo-txn-001\",\n  \"merchant_id\": \"merchant_1\",\n  \"merchant_name\": \"UrbanCart\",\n  \"amount\": 2499.00,\n  \"currency\": \"INR\",\n  \"timestamp\": \"2026-01-15T10:00:00Z\"\n}"
+            },
+            "description": "Same event_id as the first request in this folder. Should return status=duplicate_ignored and NOT create a second event or change transaction state."
+          }
+        },
+        {
+          "name": "Ingest with unsupported event_type (validation demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('422 Unprocessable', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{base_url}}/events",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"demo-evt-bad\",\n  \"event_type\": \"payment_refunded\",\n  \"transaction_id\": \"demo-txn-001\",\n  \"merchant_id\": \"merchant_1\",\n  \"amount\": 100,\n  \"timestamp\": \"2026-01-15T10:00:00Z\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "List transactions (no filters)",
+          "request": { "method": "GET", "url": "{{base_url}}/transactions" }
+        },
+        {
+          "name": "List transactions - filter by merchant",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/transactions?merchant_id=merchant_1"
+          }
+        },
+        {
+          "name": "List transactions - filter by payment_status",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/transactions?payment_status=processed"
+          }
+        },
+        {
+          "name": "List transactions - date range + sort + pagination",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/transactions?start_date=2026-01-01T00:00:00Z&end_date=2026-01-31T23:59:59Z&sort_by=amount&sort_order=desc&page=1&page_size=10"
+          }
+        },
+        {
+          "name": "Get transaction detail (with event history)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/transactions/demo-txn-001"
+          }
+        },
+        {
+          "name": "Get transaction - not found (404 demo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/transactions/does-not-exist"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reconciliation",
+      "item": [
+        {
+          "name": "Summary by merchant",
+          "request": { "method": "GET", "url": "{{base_url}}/reconciliation/summary?group_by=merchant" }
+        },
+        {
+          "name": "Summary by date",
+          "request": { "method": "GET", "url": "{{base_url}}/reconciliation/summary?group_by=date" }
+        },
+        {
+          "name": "Summary by payment_status",
+          "request": { "method": "GET", "url": "{{base_url}}/reconciliation/summary?group_by=payment_status" }
+        },
+        {
+          "name": "Discrepancies - all types",
+          "request": { "method": "GET", "url": "{{base_url}}/reconciliation/discrepancies" }
+        },
+        {
+          "name": "Discrepancies - unsettled_processed only",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/reconciliation/discrepancies?type=unsettled_processed&stale_hours=24"
+          }
+        },
+        {
+          "name": "Discrepancies - settled_failed only",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/reconciliation/discrepancies?type=settled_failed"
+          }
+        },
+        {
+          "name": "Discrepancies - conflicting_events only",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/reconciliation/discrepancies?type=conflicting_events"
+          }
+        }
+      ]
+    }
+  ]
+}
