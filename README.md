@@ -12,6 +12,12 @@ review, and final acceptance remain mine.
 Built with **FastAPI** + **SQLAlchemy**, backed by **SQLite** locally (zero setup) with a
 one-line switch to **Postgres** for production.
 
+## Submission Links
+
+- **GitHub Repository:** https://github.com/Sooraj1206/setu-reconciliation-service
+- **Live API Documentation:** https://setu-reconciliation-service-7ycf.onrender.com/docs
+- **Video Walkthrough:** https://www.loom.com/share/1a3a4557bc8a41c4a7f2164032e16544
+
 ---
 
 ## Table of contents
