@@ -19,15 +19,43 @@ SORTABLE_FIELDS = {
 
 @router.get("", response_model=schemas.PaginatedTransactions)
 def list_transactions(
-    merchant_id: Optional[str] = Query(None),
-    payment_status: Optional[str] = Query(None, description="initiated | processed | failed"),
-    settlement_status: Optional[str] = Query(None, description="unsettled | settled"),
-    start_date: Optional[datetime] = Query(None, description="Filter created_at >= start_date (ISO 8601)"),
-    end_date: Optional[datetime] = Query(None, description="Filter created_at <= end_date (ISO 8601)"),
-    sort_by: str = Query("created_at", pattern="^(created_at|updated_at|amount)$"),
-    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=200),
+    merchant_id: Optional[str] = Query(
+        None,
+        description="Filter by merchant ID.",
+        examples={"example": {"summary": "Sample merchant", "value": "merchant_2"}},
+    ),
+    payment_status: Optional[str] = Query(
+        None,
+        description="initiated | processed | failed",
+        examples={"example": {"summary": "Sample status", "value": "processed"}},
+    ),
+    settlement_status: Optional[str] = Query(
+        None,
+        description="unsettled | settled",
+        examples={"example": {"summary": "Sample status", "value": "unsettled"}},
+    ),
+    start_date: Optional[datetime] = Query(
+        None,
+        description="Filter created_at >= start_date (ISO 8601)",
+        examples={"example": {"summary": "Sample start", "value": "2026-01-01T00:00:00Z"}},
+    ),
+    end_date: Optional[datetime] = Query(
+        None,
+        description="Filter created_at <= end_date (ISO 8601)",
+        examples={"example": {"summary": "Sample end", "value": "2026-01-31T23:59:59Z"}},
+    ),
+    sort_by: str = Query(
+        "created_at",
+        pattern="^(created_at|updated_at|amount)$",
+        examples={"example": {"summary": "Sort by", "value": "created_at"}},
+    ),
+    sort_order: str = Query(
+        "desc",
+        pattern="^(asc|desc)$",
+        examples={"example": {"summary": "Sort order", "value": "desc"}},
+    ),
+    page: int = Query(1, ge=1, examples={"example": {"summary": "Page number", "value": 1}}),
+    page_size: int = Query(20, ge=1, le=200, examples={"example": {"summary": "Page size", "value": 20}}),
     db: Session = Depends(get_db),
 ):
     """

@@ -14,11 +14,28 @@ router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
 @router.get("/summary")
 def reconciliation_summary(
     group_by: str = Query(
-        "merchant", pattern="^(merchant|date|payment_status|settlement_status)$"
+        "merchant",
+        pattern="^(merchant|date|payment_status|settlement_status)$",
+        examples={
+            "merchant": {"summary": "Group by merchant", "value": "merchant"},
+            "date": {"summary": "Group by date", "value": "date"},
+        },
     ),
-    merchant_id: Optional[str] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    merchant_id: Optional[str] = Query(
+        None,
+        description="Optional merchant filter.",
+        examples={"example": {"summary": "Sample merchant", "value": "merchant_2"}},
+    ),
+    start_date: Optional[datetime] = Query(
+        None,
+        description="Inclusive start date for the aggregation window (ISO 8601).",
+        examples={"example": {"summary": "Sample start", "value": "2026-01-01T00:00:00Z"}},
+    ),
+    end_date: Optional[datetime] = Query(
+        None,
+        description="Inclusive end date for the aggregation window (ISO 8601).",
+        examples={"example": {"summary": "Sample end", "value": "2026-01-31T23:59:59Z"}},
+    ),
     db: Session = Depends(get_db),
 ):
     """
@@ -75,19 +92,29 @@ def reconciliation_summary(
 
 @router.get("/discrepancies", response_model=schemas.PaginatedDiscrepancies)
 def reconciliation_discrepancies(
-    merchant_id: Optional[str] = None,
+    merchant_id: Optional[str] = Query(
+        None,
+        description="Optional merchant filter.",
+        examples={"example": {"summary": "Sample merchant", "value": "merchant_2"}},
+    ),
     type: Optional[str] = Query(
         None,
         pattern="^(unsettled_processed|settled_failed|conflicting_events)$",
         description="Filter to a single discrepancy type. Omit to return all types.",
+        examples={
+            "unsettled": {"summary": "Unsettled processed", "value": "unsettled_processed"},
+            "settled_failed": {"summary": "Settled failed", "value": "settled_failed"},
+            "conflict": {"summary": "Conflicting terminal events", "value": "conflicting_events"},
+        },
     ),
     stale_hours: int = Query(
         24,
         ge=0,
         description="A 'processed' payment with no settlement is only flagged once this many hours have passed since it was processed.",
+        examples={"example": {"summary": "Default stale window", "value": 24}},
     ),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1, examples={"example": {"summary": "Page number", "value": 1}}),
+    page_size: int = Query(50, ge=1, le=200, examples={"example": {"summary": "Page size", "value": 50}}),
     db: Session = Depends(get_db),
 ):
     """

@@ -9,7 +9,27 @@ router = APIRouter(prefix="/events", tags=["events"])
 VALID_EVENT_TYPES = {e.value for e in models.EventType}
 
 
-@router.post("", response_model=schemas.IngestResponse, status_code=202)
+@router.post(
+    "",
+    response_model=schemas.IngestResponse,
+    status_code=202,
+    responses={
+        202: {
+            "description": "Accepted event",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "accepted",
+                        "event_id": "b768e3a7-9eb3-4603-b21c-a54cc95661bc",
+                        "transaction_id": "2f86e94c-239c-4302-9874-75f28e3474ee",
+                        "transaction_payment_status": "processed",
+                        "transaction_settlement_status": "unsettled",
+                    }
+                }
+            },
+        }
+    },
+)
 def ingest_event(event: schemas.EventIn, db: Session = Depends(get_db)):
     """
     Ingest a single payment lifecycle event.

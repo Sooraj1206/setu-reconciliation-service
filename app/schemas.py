@@ -5,16 +5,35 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EventIn(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "event_id": "b768e3a7-9eb3-4603-b21c-a54cc95661bc",
+                "event_type": "payment_processed",
+                "transaction_id": "2f86e94c-239c-4302-9874-75f28e3474ee",
+                "merchant_id": "merchant_2",
+                "merchant_name": "FreshBasket",
+                "amount": 15248.29,
+                "currency": "INR",
+                "timestamp": "2026-01-08T12:11:58.085567+00:00",
+            }
+        }
+    )
+
     event_id: str = Field(..., description="Globally unique ID for this event; used for idempotency.")
     event_type: str = Field(
         ..., description="One of payment_initiated | payment_processed | payment_failed | settled"
     )
-    transaction_id: str
-    merchant_id: str
-    merchant_name: Optional[str] = None
-    amount: float
-    currency: str = "INR"
-    timestamp: datetime
+    transaction_id: str = Field(
+        ..., json_schema_extra={"example": "2f86e94c-239c-4302-9874-75f28e3474ee"}
+    )
+    merchant_id: str = Field(..., json_schema_extra={"example": "merchant_2"})
+    merchant_name: Optional[str] = Field(None, json_schema_extra={"example": "FreshBasket"})
+    amount: float = Field(..., json_schema_extra={"example": 15248.29})
+    currency: str = Field("INR", json_schema_extra={"example": "INR"})
+    timestamp: datetime = Field(
+        ..., json_schema_extra={"example": "2026-01-08T12:11:58.085567+00:00"}
+    )
 
     @field_validator("amount")
     @classmethod
