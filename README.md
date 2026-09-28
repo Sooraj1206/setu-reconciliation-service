@@ -24,7 +24,7 @@ one-line switch to **Postgres** for production.
 
 - [Architecture overview](#architecture-overview)
 - [Data model](#data-model)
-- [Setup — local development](#setup--local-development)
+- [Local reproduction](#local-reproduction)
 - [Sample data](#sample-data)
 - [API documentation](#api-documentation)
 - [Testing](#testing)
@@ -115,7 +115,7 @@ a composite `(merchant_id, payment_status)` for the common "merchant + status" f
 combo, `event_id` (unique), and a composite `(transaction_id, timestamp)` on events for
 fetching ordered history per transaction.
 
-## Setup — local development
+## Local reproduction
 
 Requires Python 3.11+.
 
@@ -259,23 +259,19 @@ shape) runnable via Postman's Collection Runner or `newman`.
 
 ## Deployment
 
-The service is a stateless FastAPI app and deploys the same way on Render, Railway,
-Fly.io, or any container platform:
+The application has been deployed as a live Render Web Service from this GitHub
+repository. The deployed service runs the FastAPI application and exposes the same
+reconciliation endpoints described in this README.
 
-1. Push this repo to GitHub.
-2. Create a new **Web Service** (Render) / project (Railway) pointing at the repo.
-3. Build command: `pip install -r requirements.txt` — or just point the platform at the
-   included `Dockerfile`.
-4. Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Set `DATABASE_URL` to a managed Postgres instance for a persistent, production-grade
-   database (most platforms offer one click to provision this and inject the env var).
-   Without it, the service falls back to a local SQLite file, which works but won't
-   persist across redeploys on most platforms.
-6. Once live, re-run `scripts/seed_db.py` (pointed at the deployed `DATABASE_URL`) to
-   load the sample dataset into the deployed database, or hit `POST /events` directly.
+- **Live API documentation:** https://setu-reconciliation-service-7ycf.onrender.com/docs
+- **Health check:** https://setu-reconciliation-service-7ycf.onrender.com/health
+- **Deployment source:** [GitHub Repository](https://github.com/Sooraj1206/setu-reconciliation-service)
+- **Walkthrough:** [Loom Video](https://www.loom.com/share/1a3a4557bc8a41c4a7f2164032e16544)
 
-> **Live URL:** _add your deployed URL here once provisioned._
-> **Demo video:** _add your Loom/YouTube link here._
+The live Swagger UI can be used to inspect the OpenAPI schemas and execute the primary
+workflows directly, including event ingestion, reconciliation summaries, and discrepancy
+queries. The deployed application was validated locally with the automated test suite:
+**13 tests passed**.
 
 ## Assumptions & tradeoffs
 
